@@ -1,5 +1,7 @@
 {
   "name": "Copy of Copy of Paul Roofs",
   "description": "Premium roofing solutions website featuring modern dark aesthetic, service showcase, and quick quote functionality.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }
