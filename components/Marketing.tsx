@@ -5,7 +5,7 @@ import {
     Share2, Facebook, LayoutGrid, Clock, Copy, ExternalLink, 
     Users, TrendingUp, CheckCircle, AlertCircle, Phone, MapPin,
     Briefcase, Camera, UploadCloud, FileText, Award, X, Printer, 
-    ShieldCheck, Wind, ThermometerSnowflake, AlertTriangle, HardHat, FileCheck
+    ShieldCheck, Wind, ThermometerSnowflake, AlertTriangle, HardHat, FileCheck, Search
 } from 'lucide-react';
 
 interface MarketingProps {
@@ -452,6 +452,7 @@ const mockContracts: Contract[] = [
 export const Marketing: React.FC<MarketingProps> = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'calendar' | 'leads' | 'jobs' | 'safety'>('dashboard');
   const [simulatedDate] = useState('2026-02-15'); // Launch Day
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Job Jacket State
   const [activeContracts] = useState<Contract[]>(mockContracts);
@@ -466,6 +467,28 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack }) => {
   const [safetyContract, setSafetyContract] = useState<Contract | null>(null);
   const [safetyRecord, setSafetyRecord] = useState<SafetyRecord | null>(null);
 
+  // Filtering Logic
+  const filteredPosts = posts.filter(post => 
+    post.content.caption.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    post.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    post.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    post.date.includes(searchQuery)
+  );
+
+  const filteredLeads = leads.filter(lead => 
+    lead.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    lead.customer.phone.includes(searchQuery) ||
+    lead.customer.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    lead.project_details.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    lead.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    lead.source.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredContracts = activeContracts.filter(contract => 
+    contract.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    contract.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    contract.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Dashboard Logic
   const todayPost = posts.find(p => p.date === simulatedDate);
@@ -547,37 +570,51 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack }) => {
              </div>
           </div>
           
-          <div className="flex items-center gap-2 overflow-x-auto">
-            <button 
-                onClick={() => setActiveTab('dashboard')}
-                className={`px-4 py-2 rounded-sm text-sm font-bold uppercase tracking-wide transition-all ${activeTab === 'dashboard' ? 'bg-teal-400 text-navy-900' : 'text-slate-400 hover:text-white'}`}
-            >
-                Command Center
-            </button>
-            <button 
-                onClick={() => setActiveTab('calendar')}
-                className={`px-4 py-2 rounded-sm text-sm font-bold uppercase tracking-wide transition-all ${activeTab === 'calendar' ? 'bg-teal-400 text-navy-900' : 'text-slate-400 hover:text-white'}`}
-            >
-                Calendar
-            </button>
-             <button 
-                onClick={() => setActiveTab('leads')}
-                className={`px-4 py-2 rounded-sm text-sm font-bold uppercase tracking-wide transition-all ${activeTab === 'leads' ? 'bg-teal-400 text-navy-900' : 'text-slate-400 hover:text-white'}`}
-            >
-                Leads
-            </button>
-            <button 
-                onClick={() => setActiveTab('jobs')}
-                className={`px-4 py-2 rounded-sm text-sm font-bold uppercase tracking-wide transition-all ${activeTab === 'jobs' ? 'bg-teal-400 text-navy-900' : 'text-slate-400 hover:text-white'}`}
-            >
-                Operations
-            </button>
-             <button 
-                onClick={() => setActiveTab('safety')}
-                className={`px-4 py-2 rounded-sm text-sm font-bold uppercase tracking-wide transition-all ${activeTab === 'safety' ? 'bg-teal-400 text-navy-900' : 'text-slate-400 hover:text-white'}`}
-            >
-                Safety
-            </button>
+          <div className="flex items-center gap-4">
+            {/* Search Input */}
+            <div className="relative hidden md:block">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+                <input 
+                    type="text" 
+                    placeholder="Search..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-navy-950 border border-white/10 rounded-full py-1.5 pl-9 pr-4 text-xs font-bold text-white placeholder-slate-600 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 w-48 transition-all"
+                />
+            </div>
+
+            <div className="flex items-center gap-2 overflow-x-auto">
+                <button 
+                    onClick={() => setActiveTab('dashboard')}
+                    className={`px-4 py-2 rounded-sm text-sm font-bold uppercase tracking-wide transition-all ${activeTab === 'dashboard' ? 'bg-teal-400 text-navy-900' : 'text-slate-400 hover:text-white'}`}
+                >
+                    Command Center
+                </button>
+                <button 
+                    onClick={() => setActiveTab('calendar')}
+                    className={`px-4 py-2 rounded-sm text-sm font-bold uppercase tracking-wide transition-all ${activeTab === 'calendar' ? 'bg-teal-400 text-navy-900' : 'text-slate-400 hover:text-white'}`}
+                >
+                    Calendar
+                </button>
+                <button 
+                    onClick={() => setActiveTab('leads')}
+                    className={`px-4 py-2 rounded-sm text-sm font-bold uppercase tracking-wide transition-all ${activeTab === 'leads' ? 'bg-teal-400 text-navy-900' : 'text-slate-400 hover:text-white'}`}
+                >
+                    Leads
+                </button>
+                <button 
+                    onClick={() => setActiveTab('jobs')}
+                    className={`px-4 py-2 rounded-sm text-sm font-bold uppercase tracking-wide transition-all ${activeTab === 'jobs' ? 'bg-teal-400 text-navy-900' : 'text-slate-400 hover:text-white'}`}
+                >
+                    Operations
+                </button>
+                <button 
+                    onClick={() => setActiveTab('safety')}
+                    className={`px-4 py-2 rounded-sm text-sm font-bold uppercase tracking-wide transition-all ${activeTab === 'safety' ? 'bg-teal-400 text-navy-900' : 'text-slate-400 hover:text-white'}`}
+                >
+                    Safety
+                </button>
+            </div>
           </div>
         </div>
       </div>
@@ -694,7 +731,7 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack }) => {
 
                 {/* Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                    {posts.map((post) => (
+                    {filteredPosts.map((post) => (
                         <div key={post.id} className="bg-navy-900 border border-white/5 hover:border-teal-400/30 rounded-sm overflow-hidden group transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl flex flex-col">
                             {/* Card Header */}
                             <div className="p-6 border-b border-white/5 flex justify-between items-center bg-navy-800/50">
@@ -762,6 +799,11 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack }) => {
                             </div>
                         </div>
                     ))}
+                    {filteredPosts.length === 0 && (
+                        <div className="col-span-full p-12 text-center text-slate-500 border border-white/5 bg-navy-900 rounded-sm">
+                            No posts found matching your search.
+                        </div>
+                    )}
                 </div>
             </>
         )}
@@ -790,7 +832,7 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack }) => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
-                                {leads.map((lead) => (
+                                {filteredLeads.map((lead) => (
                                     <tr key={lead.lead_id} className="hover:bg-white/5 transition-colors group cursor-pointer">
                                         <td className="p-6">
                                             <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest ${
@@ -833,6 +875,13 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack }) => {
                                         </td>
                                     </tr>
                                 ))}
+                                {filteredLeads.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6} className="p-12 text-center text-slate-500">
+                                            No leads found matching your search.
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
@@ -853,7 +902,7 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack }) => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* List of Jobs */}
                     <div className="lg:col-span-1 space-y-4">
-                        {activeContracts.map(contract => (
+                        {filteredContracts.map(contract => (
                             <div 
                                 key={contract.id} 
                                 onClick={() => { setSelectedContract(contract); setUploadedPhotos([]); setUploadStatus(''); }}
@@ -871,6 +920,11 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack }) => {
                                 </div>
                             </div>
                         ))}
+                        {filteredContracts.length === 0 && (
+                             <div className="p-6 text-center text-slate-500 border border-white/5 bg-navy-900 rounded-sm">
+                                No active jobs found.
+                            </div>
+                        )}
                     </div>
 
                     {/* Job Jacket Detail */}
@@ -997,7 +1051,7 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack }) => {
                      {/* List of Jobs to Report On */}
                     <div className="lg:col-span-1 space-y-4">
                         <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Select Active Site</h3>
-                        {activeContracts.filter(c => c.status === 'active').map(contract => (
+                        {filteredContracts.filter(c => c.status === 'active').map(contract => (
                             <div 
                                 key={contract.id} 
                                 onClick={() => generateDSR(contract)}
@@ -1012,6 +1066,11 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack }) => {
                                 </div>
                             </div>
                         ))}
+                        {filteredContracts.filter(c => c.status === 'active').length === 0 && (
+                            <div className="p-6 text-center text-slate-500 border border-white/5 bg-navy-900 rounded-sm">
+                                No active sites found.
+                            </div>
+                        )}
                     </div>
 
                     {/* Digital DSR HUD */}
