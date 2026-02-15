@@ -12,6 +12,7 @@ import {
 
 interface MarketingProps {
   onBack: () => void;
+  leads: Lead[];
 }
 
 // Full Post Data
@@ -395,42 +396,6 @@ const posts: SocialPost[] = [
   }
 ];
 
-// Mock Leads Data
-const leads: Lead[] = [
-    {
-        "lead_id": "auto-generated-001",
-        "timestamp": "2026-02-14 10:30:00",
-        "status": "new",
-        "source": "website_form",
-        "customer": {
-            "name": "Jane Doe",
-            "phone": "506-555-0199",
-            "address": "123 Stock Farm Rd"
-        },
-        "project_details": {
-            "type": "shingle_replace",
-            "urgency": "high",
-            "notes": "Leaking near chimney"
-        }
-    },
-    {
-        "lead_id": "auto-generated-002",
-        "timestamp": "2026-02-13 15:45:00",
-        "status": "contacted",
-        "source": "emergency_call_log",
-        "customer": {
-            "name": "Mike Ross",
-            "phone": "506-555-0245",
-            "address": "45 Gondola Point Rd"
-        },
-        "project_details": {
-            "type": "repair",
-            "urgency": "medium",
-            "notes": "Missing shingles from wind storm"
-        }
-    }
-];
-
 // Mock Contracts Data
 const mockContracts: Contract[] = [
   {
@@ -451,7 +416,7 @@ const mockContracts: Contract[] = [
   }
 ];
 
-export const Marketing: React.FC<MarketingProps> = ({ onBack }) => {
+export const Marketing: React.FC<MarketingProps> = ({ onBack, leads }) => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'calendar' | 'leads' | 'jobs' | 'safety' | 'ai_studio'>('dashboard');
   const [simulatedDate] = useState('2026-02-15'); // Launch Day
   const [searchQuery, setSearchQuery] = useState('');
@@ -657,18 +622,7 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack }) => {
 
         } else if (aiTool === 'video') {
             // Veo 3.1 Fast Generate Preview
-            // Note: generateVideos is on the model instance, but SDK structure might vary. 
-            // Using the pattern from instructions: ai.models.generateVideos
-            // However, SDK instance `ai` usually has `getGenerativeModel`. 
-            // Correct per instructions: `ai.models.generateVideos` seems to imply a different client structure or directly accessing models.
-            // But since we initialized `new GoogleGenAI`, we use `ai.languageModel` or similar? 
-            // Actually, for Veo, the instructions use `ai.models.generateVideos` directly on the client instance if using a specific version, 
-            // but standard SDK usage is `ai.getGenerativeModel`. 
-            // Let's assume the standard `getGenerativeModel` doesn't support `generateVideos` directly yet in typical flows or use the instruction's exact syntax if `ai` is the client.
-            // Re-reading instructions: "const ai = new GoogleGenAI... await ai.models.generateVideos". 
-            // This implies the `GoogleGenAI` instance has a `models` property. 
-            
-            // @ts-ignore - Ignoring TS for dynamic SDK method access as per specific instruction pattern
+            // @ts-ignore
             let operation = await ai.models.generateVideos({
                 model: 'veo-3.1-fast-generate-preview',
                 prompt: prompt,
@@ -686,9 +640,7 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack }) => {
              // @ts-ignore
             const uri = operation.response?.generatedVideos?.[0]?.video?.uri;
             if (uri) {
-                // Mock fetching the actual bytes or just using the URI with key
                 setGeneratedMedia(`${uri}&key=${process.env.API_KEY}`); 
-                // Note: The instruction says fetch output. We'll set it as video src for now.
             }
             setResponse("Video generation complete.");
 
@@ -1592,9 +1544,10 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack }) => {
                                             value={prompt}
                                             onChange={(e) => setPrompt(e.target.value)}
                                             placeholder={
-                                                aiTool === 'editor' ? "Add a retro filter..." :
-                                                aiTool === 'generator' ? "A modern house with a black metal roof..." :
-                                                aiTool === 'maps' ? "Find roofing suppliers near Quispamsis..." :
+                                                aiTool === 'editor' ? "Add a retro filter to this metal roof..." :
+                                                aiTool === 'generator' ? "A modern house with a charcoal grey ribbed metal roof in a snowy environment..." :
+                                                aiTool === 'maps' ? "Find ribbed metal roofing suppliers near Quispamsis..." :
+                                                aiTool === 'video' ? "Drone footage of a metal roof installation..." :
                                                 "Enter your command..."
                                             }
                                             className="w-full h-32 bg-navy-950 border border-white/10 p-4 text-white placeholder-slate-600 focus:border-teal-400 focus:outline-none resize-none rounded-sm"

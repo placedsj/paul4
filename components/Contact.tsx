@@ -1,18 +1,60 @@
 import React, { useState } from 'react';
-import { Mail, Phone, MapPin, CheckCircle } from 'lucide-react';
+import { Mail, Phone, MapPin, CheckCircle, Send } from 'lucide-react';
+import { Lead } from '../types';
 
-export const Contact: React.FC = () => {
+interface ContactProps {
+    onSubmit: (lead: Lead) => void;
+}
+
+export const Contact: React.FC<ContactProps> = ({ onSubmit }) => {
     const [submitted, setSubmitted] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Form State
+    const [formData, setFormData] = useState({
+        name: '',
+        phone: '',
+        email: '',
+        service: 'Ribbed Metal Roofing', // Default per user request
+        message: ''
+    });
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value
+        });
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
-        // Simulate API call
+
+        // Create a realistic Lead object
+        const newLead: Lead = {
+            lead_id: `web-${Date.now().toString().slice(-6)}`,
+            timestamp: new Date().toISOString().replace('T', ' ').slice(0, 19),
+            status: 'new',
+            source: 'website_quote',
+            customer: {
+                name: formData.name,
+                phone: formData.phone,
+                address: formData.email // Storing email in address field for display simplicity in this demo
+            },
+            project_details: {
+                type: formData.service.toLowerCase().replace(/ /g, '_'),
+                urgency: 'medium',
+                notes: formData.message
+            }
+        };
+
+        // Simulate network delay for "Realness"
         setTimeout(() => {
+            onSubmit(newLead); // Update App State
             setIsSubmitting(false);
             setSubmitted(true);
-        }, 1500);
+            setFormData({ name: '', phone: '', email: '', service: 'Ribbed Metal Roofing', message: '' }); // Reset form
+        }, 1200);
     };
 
   return (
@@ -53,6 +95,9 @@ export const Contact: React.FC = () => {
                         <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 group-focus-within:text-teal-400 transition-colors">Name *</label>
                         <input 
                             required 
+                            name="name"
+                            value={formData.name}
+                            onChange={handleChange}
                             type="text" 
                             className="w-full bg-navy-900 border border-white/10 rounded-sm p-4 text-white placeholder-slate-600 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-all duration-300"
                             placeholder="John Doe"
@@ -62,6 +107,9 @@ export const Contact: React.FC = () => {
                         <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 group-focus-within:text-teal-400 transition-colors">Phone *</label>
                         <input 
                             required 
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleChange}
                             type="tel" 
                             className="w-full bg-navy-900 border border-white/10 rounded-sm p-4 text-white placeholder-slate-600 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-all duration-300"
                             placeholder="(506) 271-4162"
@@ -73,6 +121,9 @@ export const Contact: React.FC = () => {
                     <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 group-focus-within:text-teal-400 transition-colors">Email *</label>
                     <input 
                         required 
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
                         type="email" 
                         className="w-full bg-navy-900 border border-white/10 rounded-sm p-4 text-white placeholder-slate-600 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-all duration-300"
                         placeholder="john@example.com"
@@ -82,7 +133,14 @@ export const Contact: React.FC = () => {
                 <div className="space-y-2 group">
                     <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 group-focus-within:text-teal-400 transition-colors">Service Needed</label>
                     <div className="relative">
-                        <select className="w-full bg-navy-900 border border-white/10 rounded-sm p-4 text-white focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-all appearance-none cursor-pointer hover:bg-navy-800">
+                        <select 
+                            name="service"
+                            value={formData.service}
+                            onChange={handleChange}
+                            className="w-full bg-navy-900 border border-white/10 rounded-sm p-4 text-white focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-all appearance-none cursor-pointer hover:bg-navy-800"
+                        >
+                            <option>Ribbed Metal Roofing</option>
+                            <option>Asphalt Shingles</option>
                             <option>Roof Repair</option>
                             <option>New Installation</option>
                             <option>Gutter Maintenance</option>
@@ -100,6 +158,9 @@ export const Contact: React.FC = () => {
                 <div className="space-y-2 group">
                     <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 group-focus-within:text-teal-400 transition-colors">Message</label>
                     <textarea 
+                        name="message"
+                        value={formData.message}
+                        onChange={handleChange}
                         rows={4}
                         className="w-full bg-navy-900 border border-white/10 rounded-sm p-4 text-white placeholder-slate-600 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-all resize-none"
                         placeholder="Tell us about your project details..."
@@ -111,20 +172,31 @@ export const Contact: React.FC = () => {
                     disabled={isSubmitting || submitted}
                     className={`w-full py-5 font-display font-bold uppercase tracking-widest text-lg transition-all duration-300 shadow-lg mt-4 flex justify-center items-center gap-2 rounded-sm ${
                         submitted 
-                        ? 'bg-teal-500 text-white cursor-default' 
+                        ? 'bg-green-500 text-white cursor-default border border-green-400' 
                         : 'bg-white text-navy-900 hover:bg-teal-400 hover:text-white hover:shadow-teal-900/20'
                     }`}
                 >
                     {isSubmitting ? (
-                        <span className="w-6 h-6 border-2 border-navy-900 border-t-transparent rounded-full animate-spin"></span>
+                        <>
+                            <span className="w-6 h-6 border-2 border-navy-900 border-t-transparent rounded-full animate-spin"></span>
+                            Sending...
+                        </>
                     ) : submitted ? (
                         <>
-                            <CheckCircle size={24} /> Message Sent
+                            <CheckCircle size={24} /> Sent to Paul!
                         </>
                     ) : (
-                        "Submit Request"
+                        <>
+                            Submit Request <Send size={20} className="ml-1" />
+                        </>
                     )}
                 </button>
+                
+                {submitted && (
+                    <div className="text-center animate-fade-in-up">
+                        <p className="text-teal-400 text-sm font-bold uppercase tracking-wide">Thanks! We'll be in touch shortly.</p>
+                    </div>
+                )}
             </form>
 
             <div className="grid grid-cols-2 gap-8 mt-16 pt-8 border-t border-white/5">
