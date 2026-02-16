@@ -183,7 +183,7 @@ export const Contact: React.FC<ContactProps> = ({ onSubmit }) => {
                         </>
                     ) : submitted ? (
                         <>
-                            <CheckCircle size={24} /> Sent to Paul!
+                            <CheckCircle size={24} className="transition-transform duration-300 transform scale-125" /> Sent to Paul!
                         </>
                     ) : (
                         <>

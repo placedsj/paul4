@@ -15,8 +15,8 @@ interface MarketingProps {
   leads: Lead[];
 }
 
-// Full Post Data
-const posts: SocialPost[] = [
+// Full Post Data - CONVERTED TO STATE BELOW
+const initialPosts: SocialPost[] = [
   {
     "id": "post_001",
     "date": "2026-02-15",
@@ -416,11 +416,38 @@ const mockContracts: Contract[] = [
   }
 ];
 
+// Pre-defined Content Templates for AI Studio
+const contentTemplates = [
+    {
+        id: 'template-ribbed-metal',
+        name: 'Ribbed Metal Roof Benefits',
+        prompt: 'Generate a social media post highlighting the durability, energy efficiency, and modern aesthetic of ribbed metal roofing for homeowners in New Brunswick. Include 3-5 relevant hashtags and a call to action to request a free estimate.'
+    },
+    {
+        id: 'template-spring-inspection',
+        name: 'Spring Inspection Promo',
+        prompt: 'Create a persuasive social media caption encouraging homeowners to schedule a spring roof inspection to identify winter damage before it becomes costly. Emphasize peace of mind and local expertise. Include a call to action with phone number and website.'
+    },
+    {
+        id: 'template-customer-testimonial',
+        name: 'Request Customer Testimonial',
+        prompt: 'Write a warm and engaging social media post asking recent customers to share their positive experiences with Paul\'s Roofing. Explain how their feedback helps the business and community. Suggest they leave a review on Google or Facebook.'
+    },
+    {
+        id: 'template-emergency-service',
+        name: 'Emergency Service Reminder',
+        prompt: 'Draft a short, urgent social media post reminding residents about Paul\'s Roofing 24/7 emergency repair services for unexpected leaks or storm damage. Include the phone number prominently.'
+    }
+];
+
 export const Marketing: React.FC<MarketingProps> = ({ onBack, leads }) => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'calendar' | 'leads' | 'jobs' | 'safety' | 'ai_studio'>('dashboard');
   const [simulatedDate] = useState('2026-02-15'); // Launch Day
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Convert initialPosts to state so new posts can be added
+  const [scheduledPosts, setScheduledPosts] = useState<SocialPost[]>(initialPosts);
+
   // Job Jacket State
   const [activeContracts] = useState<Contract[]>(mockContracts);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
@@ -443,7 +470,9 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack, leads }) => {
   const [mediaType, setMediaType] = useState<string | null>(null);
   const [generatedMedia, setGeneratedMedia] = useState<string | null>(null);
   const [imageSize, setImageSize] = useState<'1K'|'2K'|'4K'>('1K');
+  const [aspectRatio, setAspectRatio] = useState<'1:1'|'3:4'|'4:3'|'9:16'|'16:9'>('1:1'); // New state for aspect ratio
   const [videoRatio, setVideoRatio] = useState<'16:9'|'9:16'>('16:9');
+  const [showPublishSuccess, setShowPublishSuccess] = useState(false);
   
   // Audio recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -451,7 +480,7 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack, leads }) => {
   const chunksRef = useRef<Blob[]>([]);
 
   // Filtering Logic
-  const filteredPosts = posts.filter(post => 
+  const filteredPosts = scheduledPosts.filter(post => 
     post.content.caption.toLowerCase().includes(searchQuery.toLowerCase()) ||
     post.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
     post.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -474,8 +503,8 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack, leads }) => {
   );
 
   // Dashboard Logic
-  const todayPost = posts.find(p => p.date === simulatedDate);
-  const nextPost = posts.find(p => p.date === '2026-02-16');
+  const todayPost = scheduledPosts.find(p => p.date === simulatedDate);
+  const nextPost = scheduledPosts.find(p => p.date === '2026-02-16');
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -567,10 +596,10 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack, leads }) => {
         if (aiTool === 'editor') {
              // Gemini 2.5 Flash Image - Edit
             if (!mediaData) throw new Error("Please upload an image first.");
-            const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash-image' });
+            const model = await ai.models.getGenerativeModel({ model: 'gemini-2.5-flash-image' });
              const result = await model.generateContent({
                 contents: [
-                    { role: 'user', parts: [{ text: prompt || "Edit this image" }, { inlineData: { mimeType: mediaType || 'image/png', data: mediaData } }] }
+                    { parts: [{ text: prompt || "Edit this image" }, { inlineData: { mimeType: mediaType || 'image/png', data: mediaData } }] }
                 ]
             });
             // Check for image in response (handling multiple parts)
@@ -586,12 +615,13 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack, leads }) => {
 
         } else if (aiTool === 'generator') {
             // Gemini 3 Pro Image Preview - Generate
-            const model = ai.getGenerativeModel({ model: 'gemini-3-pro-image-preview' });
+            const model = await ai.models.getGenerativeModel({ model: 'gemini-3-pro-image-preview' });
             const result = await model.generateContent({
-                 contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                 contents: [{ parts: [{ text: prompt }] }],
                  config: {
                     imageConfig: {
-                         imageSize: imageSize
+                         imageSize: imageSize,
+                         aspectRatio: aspectRatio // Use the new aspectRatio state
                      }
                  }
             });
@@ -605,24 +635,23 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack, leads }) => {
 
         } else if (aiTool === 'maps') {
             // Gemini 2.5 Flash + Google Maps
-            const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash', tools: [{googleMaps: {}}] });
+            const model = await ai.models.getGenerativeModel({ model: 'gemini-2.5-flash', tools: [{googleMaps: {}}] });
             const result = await model.generateContent({
-                 contents: [{ role: 'user', parts: [{ text: prompt }] }]
+                 contents: [{ parts: [{ text: prompt }] }]
             });
-            setResponse(result.response.text());
+            setResponse(result.response.text);
             // You can also process result.response.candidates[0].groundingMetadata?.groundingChunks here
 
         } else if (aiTool === 'search') {
             // Gemini 3 Flash Preview + Google Search
-            const model = ai.getGenerativeModel({ model: 'gemini-3-flash-preview', tools: [{googleSearch: {}}] });
+            const model = await ai.models.getGenerativeModel({ model: 'gemini-3-flash-preview', tools: [{googleSearch: {}}] });
             const result = await model.generateContent({
-                 contents: [{ role: 'user', parts: [{ text: prompt }] }]
+                 contents: [{ parts: [{ text: prompt }] }]
             });
-            setResponse(result.response.text());
+            setResponse(result.response.text);
 
         } else if (aiTool === 'video') {
             // Veo 3.1 Fast Generate Preview
-            // @ts-ignore
             let operation = await ai.models.generateVideos({
                 model: 'veo-3.1-fast-generate-preview',
                 prompt: prompt,
@@ -634,10 +663,8 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack, leads }) => {
             
              while (!operation.done) {
                 await new Promise(resolve => setTimeout(resolve, 5000));
-                // @ts-ignore
                 operation = await ai.operations.getVideosOperation({operation: operation});
             }
-             // @ts-ignore
             const uri = operation.response?.generatedVideos?.[0]?.video?.uri;
             if (uri) {
                 setGeneratedMedia(`${uri}&key=${process.env.API_KEY}`); 
@@ -647,43 +674,43 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack, leads }) => {
         } else if (aiTool === 'analyzer') {
             // Gemini 3 Pro Preview - Image Understanding
              if (!mediaData) throw new Error("Please upload an image first.");
-             const model = ai.getGenerativeModel({ model: 'gemini-3-pro-preview' });
+             const model = await ai.models.getGenerativeModel({ model: 'gemini-3-pro-preview' });
              const result = await model.generateContent({
                 contents: [
-                    { role: 'user', parts: [{ text: prompt || "Analyze this image" }, { inlineData: { mimeType: mediaType || 'image/jpeg', data: mediaData } }] }
+                    { parts: [{ text: prompt || "Analyze this image" }, { inlineData: { mimeType: mediaType || 'image/jpeg', data: mediaData } }] }
                 ]
             });
-            setResponse(result.response.text());
+            setResponse(result.response.text);
 
         } else if (aiTool === 'fast') {
              // Gemini 2.5 Flash Lite
-             const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash-lite-latest' });
+             const model = await ai.models.getGenerativeModel({ model: 'gemini-2.5-flash-lite-latest' });
              const result = await model.generateContent({
-                 contents: [{ role: 'user', parts: [{ text: prompt }] }]
+                 contents: [{ parts: [{ text: prompt }] }]
             });
-            setResponse(result.response.text());
+            setResponse(result.response.text);
 
         } else if (aiTool === 'thinking') {
              // Gemini 3 Pro Preview - Thinking Mode
-             const model = ai.getGenerativeModel({ model: 'gemini-3-pro-preview' });
+             const model = await ai.models.getGenerativeModel({ model: 'gemini-3-pro-preview' });
              const result = await model.generateContent({
-                 contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                 contents: [{ parts: [{ text: prompt }] }],
                  config: {
                      thinkingConfig: { thinkingBudget: 32768 }
                  }
             });
-            setResponse(result.response.text());
+            setResponse(result.response.text);
 
         } else if (aiTool === 'audio') {
              // Gemini 3 Flash Preview - Audio Transcription
              if (!mediaData) throw new Error("Please record audio first.");
-             const model = ai.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+             const model = await ai.models.getGenerativeModel({ model: 'gemini-3-flash-preview' });
              const result = await model.generateContent({
                 contents: [
-                    { role: 'user', parts: [{ text: "Transcribe this audio" }, { inlineData: { mimeType: 'audio/webm', data: mediaData } }] }
+                    { parts: [{ text: "Transcribe this audio" }, { inlineData: { mimeType: 'audio/webm', data: mediaData } }] }
                 ]
             });
-            setResponse(result.response.text());
+            setResponse(result.response.text);
         }
 
     } catch (error: any) {
@@ -693,6 +720,39 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack, leads }) => {
         setIsLoading(false);
     }
   };
+
+  const handlePublishPost = () => {
+    if (!response) {
+      alert("No content to publish.");
+      return;
+    }
+
+    const newPost: SocialPost = {
+      id: `ai-post-${Date.now()}`,
+      date: new Date().toISOString().slice(0, 10), // Current date
+      day: new Date().toLocaleDateString('en-US', { weekday: 'long' }),
+      category: 'AI Generated',
+      status: 'scheduled',
+      content: {
+        caption: response,
+        hashtags: ['#AIGenerated', '#PaulsRoofing', '#NewBrunswick'] // Default hashtags
+      },
+      visual_brief: generatedMedia ? 'AI-Generated Visual' : 'AI-Generated Text',
+      cta: 'None' // Default, can be refined later by AI if needed
+    };
+
+    setScheduledPosts(prevPosts => [newPost, ...prevPosts]);
+    setShowPublishSuccess(true);
+    
+    // Clear AI Studio fields after publishing
+    setPrompt('');
+    setResponse('');
+    setGeneratedMedia(null);
+    setMediaData(null); // Clear uploaded media
+
+    setTimeout(() => setShowPublishSuccess(false), 3000); // Hide success message after 3 seconds
+  };
+
 
   const getWarrantyDate = () => {
     const today = new Date();
@@ -733,9 +793,9 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack, leads }) => {
       title: 'Content Creation',
       icon: Wand2,
       tools: [
-        { id: 'editor', name: 'Nano Editor', icon: Wand2, desc: 'Edit photos with text commands', model: 'Gemini 2.5 Flash Image' },
-        { id: 'generator', name: 'Visualizer Pro', icon: ImageIcon, desc: 'Generate 4K marketing assets', model: 'Gemini 3 Pro Image' },
-        { id: 'video', name: 'Veo Studio', icon: Video, desc: 'Generate marketing videos', model: 'Veo 3.1 Fast' },
+        { id: 'editor', name: 'Nano Editor', icon: Wand2, desc: 'Edit photos with text commands', model: 'Gemini 2.5 Flash Image', isContentTool: true },
+        { id: 'generator', name: 'Visualizer Pro', icon: ImageIcon, desc: 'Generate 4K marketing assets', model: 'Gemini 3 Pro Image', isContentTool: true },
+        { id: 'video', name: 'Veo Studio', icon: Video, desc: 'Generate marketing videos', model: 'Veo 3.1 Fast', isContentTool: true },
       ]
     },
     {
@@ -757,6 +817,11 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack, leads }) => {
       ]
     }
   ];
+
+  // Helper to check if the current tool is a content creation tool
+  const isCurrentToolContentTool = aiTool 
+    ? toolCategories.find(cat => cat.title === 'Content Creation')?.tools.some(tool => tool.id === aiTool)
+    : false;
 
   return (
     <div className="min-h-screen bg-navy-950 text-white pb-24 relative">
@@ -937,7 +1002,7 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack, leads }) => {
                     <div className="flex items-center gap-4 text-slate-400 text-sm font-bold uppercase tracking-widest">
                         <div className="flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
-                            {posts.length} Scheduled
+                            {scheduledPosts.length} Scheduled
                         </div>
                     </div>
                 </div>
@@ -1469,6 +1534,24 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack, leads }) => {
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-grow">
                             <div className="space-y-6">
+                                {/* Templates for Content Creation Tools */}
+                                {isCurrentToolContentTool && (
+                                    <div className="space-y-2">
+                                        <label className="text-teal-400 text-xs font-bold uppercase tracking-widest block mb-2">Load Template</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {contentTemplates.map(template => (
+                                                <button 
+                                                    key={template.id}
+                                                    onClick={() => setPrompt(template.prompt)}
+                                                    className="px-4 py-2 text-sm bg-navy-800 hover:bg-teal-400 text-slate-300 hover:text-navy-900 rounded-sm transition-colors border border-white/10"
+                                                >
+                                                    {template.name}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Inputs based on tool type */}
                                 {(aiTool === 'editor' || aiTool === 'analyzer') && (
                                      <div className="border-2 border-dashed border-white/10 rounded-lg p-8 text-center hover:bg-white/5 transition-colors relative">
@@ -1504,20 +1587,36 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack, leads }) => {
                                 )}
 
                                 {aiTool === 'generator' && (
-                                    <div>
-                                        <label className="text-slate-500 text-xs font-bold uppercase tracking-widest block mb-2">Image Size</label>
-                                        <div className="flex gap-2">
-                                            {['1K', '2K', '4K'].map(size => (
-                                                <button 
-                                                    key={size}
-                                                    onClick={() => setImageSize(size as any)}
-                                                    className={`flex-1 py-2 text-sm font-bold border ${imageSize === size ? 'bg-teal-400 text-navy-900 border-teal-400' : 'bg-navy-950 text-slate-400 border-white/10'}`}
-                                                >
-                                                    {size}
-                                                </button>
-                                            ))}
+                                    <>
+                                        <div>
+                                            <label className="text-slate-500 text-xs font-bold uppercase tracking-widest block mb-2">Image Size</label>
+                                            <div className="flex gap-2">
+                                                {['1K', '2K', '4K'].map(size => (
+                                                    <button 
+                                                        key={size}
+                                                        onClick={() => setImageSize(size as any)}
+                                                        className={`flex-1 py-2 text-sm font-bold border ${imageSize === size ? 'bg-teal-400 text-navy-900 border-teal-400' : 'bg-navy-950 text-slate-400 border-white/10'}`}
+                                                    >
+                                                        {size}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
+                                        <div>
+                                            <label className="text-slate-500 text-xs font-bold uppercase tracking-widest block mb-2">Aspect Ratio</label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {['1:1', '3:4', '4:3', '9:16', '16:9'].map(ratio => (
+                                                    <button 
+                                                        key={ratio}
+                                                        onClick={() => setAspectRatio(ratio as any)}
+                                                        className={`flex-1 py-2 text-sm font-bold border ${aspectRatio === ratio ? 'bg-teal-400 text-navy-900 border-teal-400' : 'bg-navy-950 text-slate-400 border-white/10'}`}
+                                                    >
+                                                        {ratio}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
                                 )}
 
                                 {aiTool === 'video' && (
@@ -1579,6 +1678,20 @@ export const Marketing: React.FC<MarketingProps> = ({ onBack, leads }) => {
                                 {response && (
                                     <div className="prose prose-invert max-w-none">
                                         <p className="whitespace-pre-wrap text-slate-300 font-light leading-relaxed">{response}</p>
+                                        {/* Publish Button */}
+                                        {isCurrentToolContentTool && (
+                                            <button 
+                                                onClick={handlePublishPost}
+                                                className="mt-6 w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2 shadow-lg shadow-green-900/20"
+                                            >
+                                                <Calendar size={20} /> Publish to Calendar
+                                            </button>
+                                        )}
+                                        {showPublishSuccess && (
+                                            <div className="mt-4 text-center text-green-400 text-sm font-bold animate-fade-in-up">
+                                                Post Scheduled!
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
